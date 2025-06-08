@@ -1,9 +1,23 @@
 const request = require('supertest');
-const app = require('../index');
+const express = require('express');
+const routes = require('../routes/tasks');
 
-describe('Task Service', () => {
-it('should return pong', async () => {
-const res = await request(app).get('/ping');
-expect(res.text).toBe('pong');
+const app = express();
+app.use(express.json());
+app.use('/tasks', routes);
+
+describe('Task API', () => {
+it('GET /tasks should return 200', async () => {
+const res = await request(app).get('/tasks');
+expect(res.statusCode).toBe(200);
+});
+
+it('POST /tasks should return 201', async () => {
+const res = await request(app).post('/tasks').send({
+title: 'Test task',
+description: 'Description',
+assignedTo: 'user@example.com'
+});
+expect(res.statusCode).toBe(201);
 });
 });
