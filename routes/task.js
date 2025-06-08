@@ -19,7 +19,15 @@ await task.save();
   cache.set(`task:${task._id}`, task);
 await publishTask({ id: task._id.toString(), status: task.status });
 sendLog(`New task created: ${task._id}`);
-res.status(201).json({ id: task. });
+const decryptedTask = {
+  id: task._id,
+  title: req.body.title,
+  description: req.body.description,
+  assignedTo: req.body.assignedTo,
+  status: task.status,
+  createdAt: task.createdAt
+};
+res.status(201).json(decryptedTask);
 
   } catch (err) {
 console.error(err);
