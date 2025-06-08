@@ -1,0 +1,24 @@
+trigger:
+
+main
+
+pool:
+vmImage: 'ubuntu-latest'
+
+steps:
+
+task: NodeTool@0
+inputs:
+versionSpec: '18.x'
+
+script: |
+npm install
+npm test
+npm run build || echo "skipping build"
+displayName: 'Install and test'
+
+task: AzureWebApp@1
+inputs:
+azureSubscription: 'Your Azure Connection Name'
+appName: 'tasks-service'
+package: .
