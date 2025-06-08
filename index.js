@@ -18,7 +18,7 @@ useNewUrlParser: true,
 useUnifiedTopology: true,
 }).then(() => {
 app.listen(process.env.PORT, () =>
-console.log(Task service running on port ${process.env.PORT})
+    console.log(`Task service running on port ${process.env.PORT}`);
 );
 sendLog('Task service started');
 }).catch(console.error);
