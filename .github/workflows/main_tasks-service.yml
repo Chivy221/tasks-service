@@ -34,6 +34,7 @@ jobs:
         env:
           RABBITMQ_URL: amqp://localhost:5672
           MONGODB_URI: mongodb://localhost:27017/test
+          CRYPTO_PASSWORD: yourSuperSecretKey
         run: |
           npm install
           npm run build --if-present
