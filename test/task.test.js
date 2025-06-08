@@ -44,11 +44,14 @@ describe('Task API', () => {
   });
 
   it('GET /tasks returns tasks', async () => {
-    await Task.create({
-      title: 'Sample Task',
-      description: 'sample',
-      assignedTo: 'user@example.com'
-    });
+    // Вместо Task.create используем POST-запрос
+    await request(app)
+      .post('/tasks')
+      .send({
+        title: 'Sample Task',
+        description: 'sample',
+        assignedTo: 'user@example.com'
+      });
 
     const res = await request(app).get('/tasks');
     expect(res.statusCode).toBe(200);
