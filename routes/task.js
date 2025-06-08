@@ -19,7 +19,7 @@ await task.save();
   cache.set(`task:${task._id}`, task);
 await publishTask({ id: task._id.toString(), status: task.status });
 sendLog(`New task created: ${task._id}`);
-res.status(201).json({ id: task._id });
+res.status(201).json({ id: task. });
 
   } catch (err) {
 console.error(err);
