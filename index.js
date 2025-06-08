@@ -10,8 +10,8 @@ app.use(express.json());
 
 app.use('/tasks', taskRoutes);
 
-app.get('/health', (, res) => res.json({ status: 'ok' }));
-app.get('/metrics', (, res) => res.send('task_service_total_requests 42'));
+app.get('/health', (_, res) => res.json({ status: 'ok' }));
+app.get('/metrics', (_, res) => res.send('task_service_total_requests 42'));
 
 mongoose.connect(process.env.MONGO_URL, {
 useNewUrlParser: true,
