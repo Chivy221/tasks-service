@@ -1,6 +1,15 @@
-const fs = require('fs');
-const path = require('path');
+const amqp = require('amqplib');
 
-const logStream = fs.createWriteStream(path.join(__dirname, '../../logs/tasks.log'), { flags: 'a' });
+async function sendLog(message) {
+try {
+const conn = await amqp.connect(process.env.RABBITMQ_URL);
+const ch = await conn.createChannel();
+await ch.assertQueue(process.env.LOG_QUEUE, { durable: false });
+ch.sendToQueue(process.env.LOG_QUEUE, Buffer.from(message));
+setTimeout(() => conn.close(), 500);
+} catch (e) {
+console.error('RabbitMQ log error:', e.message);
+}
+}
 
-exports.logToFile = msg => logStream.write(msg);
+module.exports = { sendLog };
