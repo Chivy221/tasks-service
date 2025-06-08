@@ -1,5 +1,5 @@
 const crypto = require('crypto');
-const key = process.env.ENCRYPTION_KEY;
+const key = process.env.CRYPTO_PASSWORD;
 
 function encrypt(text) {
 const cipher = crypto.createCipher('aes-256-ctr', key);
