@@ -1,20 +1,47 @@
 const express = require('express');
-const router = express.Router();
 const Task = require('../models/Task');
-const encrypt = require('../middlewares/encrypt');
-const cache = require('../middlewares/cache');
-const { sendTaskCreated } = require('../utils/rabbitmq');
+const { encrypt, decrypt } = require('../utils/crypto');
+const cache = require('../utils/cache');
+const { publishTask } = require('../utils/queue');
+const { sendLog } = require('../utils/logger');
 
-router.post('/', encrypt, async (req, res) => {
-const task = new Task(req.body);
+const router = express.Router();
+
+router.post('/', async (req, res) => {
+try {
+const encrypted = {
+...req.body,
+title: encrypt(req.body.title),
+description: encrypt(req.body.description),
+};
+const task = new Task(encrypted);
 await task.save();
-await sendTaskCreated(task); // RabbitMQ
-res.status(201).json(task);
+  cache.set(`task:${task._id}`, task);
+await publishTask({ id: task._id.toString(), status: task.status });
+sendLog(`New task created: ${task._id}`);
+res.status(201).json({ id: task._id });
+
+  } catch (err) {
+console.error(err);
+res.status(500).json({ error: 'Failed to create task' });
+}
 });
 
-router.get('/', cache, async (_, res) => {
-const tasks = await Task.find();
-res.json(tasks);
+router.get('/', async (_, res) => {
+try {
+const cached = cache.get('taskList');
+if (cached) return res.json(cached);
+  const tasks = await Task.find();
+const decrypted = tasks.map(t => ({
+  ...t.toObject(),
+  title: decrypt(t.title),
+  description: decrypt(t.description)
+}));
+cache.set('taskList', decrypted);
+res.json(decrypted);
+} catch (err) {
+res.status(500).json({ error: 'Failed to get tasks' });
+}
 });
 
 module.exports = router;
