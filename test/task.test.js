@@ -5,7 +5,7 @@ jest.mock('../utils/crypto', () => ({
 
 const request = require('supertest');
 const express = require('express');
-const routes = require('../routes/tasks');
+const routes = require('../routes/task');
 
 const app = express();
 app.use(express.json());
