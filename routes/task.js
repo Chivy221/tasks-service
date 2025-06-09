@@ -1,59 +1,51 @@
 const express = require("express");
 const { v4: uuidv4 } = require("uuid");
-const router = express.Router();
-
 const Task = require("../models/Task");
 const { encrypt, decrypt } = require("../utils/encryption");
 const cache = require("../utils/cache");
-const { publishTask } = require("../utils/rabbitmq");
 const sendLog = require("../utils/logger");
 
+const router = express.Router();
+
+// Create a task
 router.post("/", async (req, res) => {
   try {
+    const { title, description, assignedTo } = req.body;
     const id = uuidv4();
 
-    const encrypted = {
+    const encryptedTask = {
       id,
-      title: encrypt(req.body.title),
-      description: encrypt(req.body.description),
-      assignedTo: req.body.assignedTo,
+      title: encrypt(title),
+      description: encrypt(description),
+      assignedTo: encrypt(assignedTo),
     };
 
-    const task = new Task(encrypted);
-    await task.save();
+    await Task.create(encryptedTask);
+    cache.set(id, encryptedTask);
+    
+    sendLog(`New task created: ${JSON.stringify(encryptedTask)}`); // локальное логирование
 
-    cache.set(`task:${task._id}`, task);
-    await publishTask({ id: task._id.toString(), status: task.status });
-    sendLog(`New task created: ${task._id}`);
-
-    res.status(201).json({
-      id,
-      title: req.body.title,
-      description: req.body.description,
-      assignedTo: req.body.assignedTo,
-      status: task.status,
-      createdAt: task.createdAt,
-    });
+    res.status(201).json({ id, title, description, assignedTo });
   } catch (err) {
     console.error("POST /tasks error:", err.message);
     res.status(500).json({ error: "Failed to create task" });
   }
 });
 
+// Get all tasks
 router.get("/", async (req, res) => {
   try {
-    const tasks = await Task.find();
+    const tasks = await Task.findAll();
     const decryptedTasks = tasks.map(task => ({
       id: task.id,
       title: decrypt(task.title),
       description: decrypt(task.description),
-      assignedTo: task.assignedTo,
-      status: task.status,
-      createdAt: task.createdAt,
+      assignedTo: decrypt(task.assignedTo),
     }));
 
     res.status(200).json(decryptedTasks);
-  } catch (error) {
+  } catch (err) {
+    console.error("GET /tasks error:", err.message);
     res.status(500).json({ error: "Failed to fetch tasks" });
   }
 });
