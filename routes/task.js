@@ -1,8 +1,16 @@
-const { v4: uuidv4 } = require('uuid'); 
+const express = require("express");
+const { v4: uuidv4 } = require('uuid');
+const router = express.Router(); 
+
+const Task = require("../models/Task");
+const { encrypt, decrypt } = require("../utils/encryption");
+const cache = require("../utils/cache");
+const { publishTask } = require("../utils/rabbitmq");
+const sendLog = require("../utils/logger");
 
 router.post('/', async (req, res) => {
   try {
-    const id = uuidv4(); 
+    const id = uuidv4();
 
     const encrypted = {
       id,
@@ -13,6 +21,7 @@ router.post('/', async (req, res) => {
 
     const task = new Task(encrypted);
     await task.save();
+
     cache.set(`task:${task._id}`, task);
     await publishTask({ id: task._id.toString(), status: task.status });
     sendLog(`New task created: ${task._id}`);
@@ -29,3 +38,5 @@ router.post('/', async (req, res) => {
     res.status(500).json({ error: 'Failed to create task', details: e.message });
   }
 });
+
+module.exports = router;
