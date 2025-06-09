@@ -3,10 +3,22 @@ const mongoose = require('mongoose');
 const dotenv = require('dotenv');
 const taskRoutes = require('./routes/task');
 const { sendLog } = require('./utils/logger');
+const fs = require('fs');
+const path = require('path');
+
 
 dotenv.config();
+
+
+const logDir = path.join(__dirname, 'logs');
+if (!fs.existsSync(logDir)) {
+  fs.mkdirSync(logDir);
+}
+
+
 const app = express();
 app.use(express.json());
+
 
 app.use('/tasks', taskRoutes);
 
