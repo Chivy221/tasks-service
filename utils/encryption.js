@@ -1,32 +1,32 @@
 const crypto = require("crypto");
+const algorithm = "aes-256-ctr";
+const secretKey = process.env.ENCRYPTION_KEY || "mystrongencryptionkey123456789012"; // 32 символа
+const iv = crypto.randomBytes(16);
 
-// Ключ и IV должны быть 32 и 16 байт соответственно
-const ENCRYPTION_KEY = crypto
-  .createHash("sha256")
-  .update(String(process.env.ENCRYPTION_SECRET || "default_secret"))
-  .digest("base64")
-  .substr(0, 32);
+const encrypt = (dataObject) => {
+  const cipher = crypto.createCipheriv(algorithm, secretKey.slice(0, 32), iv);
+  const jsonString = JSON.stringify(dataObject); // сериализуем объект
+  const encrypted = Buffer.concat([cipher.update(jsonString), cipher.final()]);
+  return {
+    iv: iv.toString("hex"),
+    content: encrypted.toString("hex")
+  };
+};
 
-const IV_LENGTH = 16;
+const decrypt = ({ iv, content }) => {
+  const decipher = crypto.createDecipheriv(
+    algorithm,
+    secretKey.slice(0, 32),
+    Buffer.from(iv, "hex")
+  );
+  const decrypted = Buffer.concat([
+    decipher.update(Buffer.from(content, "hex")),
+    decipher.final()
+  ]);
+  return JSON.parse(decrypted.toString()); // десериализуем в объект
+};
 
-function encrypt(text) {
-  const iv = crypto.randomBytes(IV_LENGTH);
-  const cipher = crypto.createCipheriv("aes-256-cbc", Buffer.from(ENCRYPTION_KEY), iv);
-  let encrypted = cipher.update(text);
-
-  encrypted = Buffer.concat([encrypted, cipher.final()]);
-  return iv.toString("hex") + ":" + encrypted.toString("hex");
-}
-
-function decrypt(text) {
-  const textParts = text.split(":");
-  const iv = Buffer.from(textParts.shift(), "hex");
-  const encryptedText = Buffer.from(textParts.join(":"), "hex");
-  const decipher = crypto.createDecipheriv("aes-256-cbc", Buffer.from(ENCRYPTION_KEY), iv);
-  let decrypted = decipher.update(encryptedText);
-
-  decrypted = Buffer.concat([decrypted, decipher.final()]);
-  return decrypted.toString();
-}
-
-module.exports = { encrypt, decrypt };
+module.exports = {
+  encrypt,
+  decrypt
+};
