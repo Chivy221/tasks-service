@@ -1,6 +1,5 @@
 const express = require('express');
 const router = express.Router();
-const Task = require('../models/Task');
 const { encrypt, decrypt } = require('../utils/encryption');
 const fs = require('fs');
 const path = require('path');
@@ -17,7 +16,7 @@ const logToFile = (message) => {
 // In-memory хранилище задач (вместо базы)
 let taskStore = [];
 
-router.post('/tasks', async (req, res) => {
+router.post('/', async (req, res) => {
   try {
     const { title, description, assignedTo } = req.body;
     const encrypted = encrypt({ title, description, assignedTo });
@@ -34,7 +33,7 @@ router.post('/tasks', async (req, res) => {
   }
 });
 
-router.get('/tasks', async (req, res) => {
+router.get('/', async (req, res) => {
   try {
     const decryptedTasks = taskStore.map(task => {
       const decrypted = decrypt({
