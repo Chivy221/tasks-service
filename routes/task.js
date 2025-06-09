@@ -1,29 +1,31 @@
-const express = require("express");
-const { v4: uuidv4 } = require("uuid");
-const Task = require("../models/Task");
-const { encrypt, decrypt } = require("../utils/encryption");
-const cache = require("../utils/cache");
-const sendLog = require("../utils/logger");
-
+const express = require('express');
 const router = express.Router();
+const Task = require('../models/Task');
+const { encrypt, decrypt } = require('../utils/encryption');
+const fs = require('fs');
+const path = require('path');
 
-// Create a task
-router.post("/", async (req, res) => {
+// Простая локальная запись логов в файл
+const logToFile = (message) => {
+  const logPath = path.join(__dirname, '../logs/task.log');
+  const logEntry = `[${new Date().toISOString()}] ${message}\n`;
+  fs.appendFile(logPath, logEntry, (err) => {
+    if (err) console.error('Failed to write log:', err);
+  });
+};
+
+// In-memory хранилище задач (вместо базы)
+let taskStore = [];
+
+router.post('/tasks', async (req, res) => {
   try {
     const { title, description, assignedTo } = req.body;
-    const id = uuidv4();
+    const encrypted = encrypt({ title, description, assignedTo });
+    const id = Date.now().toString();
 
-    const encryptedTask = {
-      id,
-      title: encrypt(title),
-      description: encrypt(description),
-      assignedTo: encrypt(assignedTo),
-    };
+    taskStore.push({ id, ...encrypted });
 
-    await Task.create(encryptedTask);
-    cache.set(id, encryptedTask);
-    
-    sendLog(`New task created: ${JSON.stringify(encryptedTask)}`); // локальное логирование
+    logToFile(`Created task ${id} assigned to ${assignedTo}`);
 
     res.status(201).json({ id, title, description, assignedTo });
   } catch (err) {
@@ -32,16 +34,19 @@ router.post("/", async (req, res) => {
   }
 });
 
-// Get all tasks
-router.get("/", async (req, res) => {
+router.get('/tasks', async (req, res) => {
   try {
-    const tasks = await Task.findAll();
-    const decryptedTasks = tasks.map(task => ({
-      id: task.id,
-      title: decrypt(task.title),
-      description: decrypt(task.description),
-      assignedTo: decrypt(task.assignedTo),
-    }));
+    const decryptedTasks = taskStore.map(task => {
+      const decrypted = decrypt({
+        title: task.title,
+        description: task.description,
+        assignedTo: task.assignedTo
+      });
+      return {
+        id: task.id,
+        ...decrypted
+      };
+    });
 
     res.status(200).json(decryptedTasks);
   } catch (err) {
