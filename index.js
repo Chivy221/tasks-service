@@ -24,3 +24,5 @@ mongoose.connect(process.env.MONGO_URL, {
   sendLog('Task service started');
 })
 .catch(console.error);
+
+module.exports = app;
